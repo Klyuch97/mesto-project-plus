@@ -20,8 +20,9 @@ app.use((req: any, res: Response, next: NextFunction) => {
   next();
 });
 
+app.use('/', cardRouter);
 app.use('/', userRouter);
-app.use('/', cardRouter)
+
 
 
 
