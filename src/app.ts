@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import routes from './routes/index'
+import { ERROR_CODE_NOT_FOUND } from './errors/errors';
 
 
 const { PORT = 3000 } = process.env;
@@ -19,6 +20,10 @@ app.use((req: any, res: Response, next: NextFunction) => {
 });
 
 app.use('/',routes);
+
+app.use((req: Request, res: Response) => {
+  res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Передан несуществующий маршрут' });
+});
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту: ${PORT}`);

@@ -36,19 +36,18 @@ export const deleteCard = (req: Request, res: Response) => {
   const { cardId } = req.params;
 
   card.findByIdAndDelete(cardId)
-    .orFail(() => {
-      const error = new Error('Карточка с указанным _id не найдена');
-      error.name = "NotFoundError";
-      return error;
-    })
+    .orFail()
     .then(card => {
       res.send({ data: card });
     })
     .catch((error) => {
-      if (error instanceof Error && error.name === 'NotFoundError') {
-        return res.status(404).send(error.message);
+      if (error.name === 'CastError') {
+        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для удаления карточки.' });
       }
-      return res.status(ERROR_CODE_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+      if (error.name === 'DocumentNotFoundError') {
+        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+      }
+      return res.status(ERROR_CODE_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
     });
 };
 
@@ -60,17 +59,16 @@ export const likeCard = (req: RequestOwner, res: Response) => {
     { new: true },).orFail()
     .populate(['owner', 'likes'])
     .then((card) => {
-      if (!card) {
-        return res.status(ERROR_CODE_NOT_FOUND).send({ message: "Карточка с указанным _id не найдена" });
-      }
       res.status(STATUS_OK).send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'DocumentNotFoundError') {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Переданы некорректные данные для постановки лайка.' });
-      } else {
-        res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
+        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
       }
+      if (err.name === 'CastError') {
+        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки лайка.' });
+      }
+      return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
     });
 }
 
@@ -83,16 +81,16 @@ export const dislikeCard = (req: RequestOwner, res: Response) => {
     { new: true },).orFail()
     .populate(['owner', 'likes'])
     .then((card) => {
-      if (!card) {
-        return res.status(ERROR_CODE_NOT_FOUND).send({ message: "Карточка с указанным _id не найдена" });
-      }
       res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'DocumentNotFoundError') {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Переданы некорректные данные для постановки лайка.' });
-      } else {
-        res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
+        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
       }
+      if (err.name === 'CastError') {
+        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для снятия лайка.' });
+
+      }
+      return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
     });
 }
