@@ -33,16 +33,16 @@ export const createUser = (req: Request, res: Response) => {
 export const getUserById = (req: Request, res: Response) => {
   const { userId } = req.params;
 
-  user.findById(userId)
+  user.findById(userId).orFail()
     .then((user) => {
-      if (!user) {
-        res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь не найден' });
-      }
       return res.status(STATUS_OK).json(user);
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
+      if (err.name === 'DocumentNotFoundError') {
         return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь по указанному _id не найден' });
+      }
+      if (err.name === 'CastError') {
+        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные.' });
       }
 
       res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Произошла ошибка" });
