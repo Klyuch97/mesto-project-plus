@@ -45,7 +45,7 @@ export const getUserById = (req: Request, res: Response) => {
         return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь по указанному _id не найден' });
       }
 
-      res.status(500).json({ message: "Произошла ошибка" });
+      res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Произошла ошибка" });
     });
 };
 
