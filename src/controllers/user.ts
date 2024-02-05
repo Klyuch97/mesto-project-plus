@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import user from '../models/user';
-import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, STATUS_OK } from '../errors/errors';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, HTTP_STATUS_UNAUTHORIZED, STATUS_OK } from '../errors/errors';
+
 
 export interface RequestUser extends Request {
   user?: {
@@ -17,17 +20,31 @@ export const getUsers = (req: Request, res: Response) => {
 };
 
 export const createUser = (req: Request, res: Response) => {
-  const { name, about, avatar } = req.body;
-  return user.create({ name, about, avatar })
-    .then((user) => {
-      res.status(STATUS_OK).send({ data: user });
+  const { name, about, avatar, email, password } = req.body;
+
+  return bcrypt.hash(password, 10)
+    .then(hash => {
+      user.create({ name, about, avatar, email, password: hash })
+        .then((user) => {
+
+          res.status(STATUS_OK).send({
+            name: user.name,
+            about: user.about,
+            avatar: user.avatar,
+            email: user.email,
+          });
+        })
+        .catch((err) => {
+          console.log(err.name);
+          if (err.name === "MongoServerError") {
+            return res.status(HTTP_STATUS_UNAUTHORIZED).json({ message: "Пользователь с таким email уже зарегестрирован" })
+          }
+          if (err.name === 'ValidationError') {
+            return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'переданы некорректные данные в методы создания пользователя' });
+          }
+          res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
+        });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'переданы некорректные данные в методы создания пользователя' });
-      }
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
-    });
 };
 
 export const getUserById = (req: Request, res: Response) => {
@@ -89,3 +106,31 @@ export const UpdateAvatar = (req: RequestUser, res: Response) => {
       res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Ошибка на сервере" });
     })
 }
+
+export const Login = (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  return user.findUserByCredentials(email, password)
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
+      });
+    })
+    .catch((err) => {
+      res.status(401).send({ message: err.message });
+    });
+};
+
+export const GetCurrentUser = (req: RequestUser, res: Response) => {
+  const userId = req.user?._id;
+  user.findById(userId)
+    .then((user) => {
+      if (!user) {
+        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь не найден' });
+      }
+      res.status(STATUS_OK).json({ data: user });
+    })
+    .catch((err) => {
+      res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка при получении информации о пользователе' });
+    });
+};
