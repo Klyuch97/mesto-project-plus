@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import card from '../models/card'
 import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, HTTP_STATUS_CONFLICT, STATUS_OK } from '../errors/errors';
 
@@ -10,7 +10,7 @@ export interface RequestOwner extends Request {
 }
 
 
-export const createCard = (req: RequestOwner, res: Response) => {
+export const createCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const { link, name } = req.body;
   const owner = req.user?._id;
 
@@ -19,21 +19,18 @@ export const createCard = (req: RequestOwner, res: Response) => {
       res.send({ data: card });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные при создании карточки' });
-      }
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
+      next(err);
     });
 };
 
-export const getCards = (req: Request, res: Response) => {
+export const getCards = (req: Request, res: Response, next: NextFunction) => {
   return card.find({})
     .populate(['owner', 'likes'])
     .then(card => res.send({ data: card }))
-    .catch(() => res.status(ERROR_CODE_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+    .catch((err) => next(err));
 };
 
-export const deleteCard = (req: RequestOwner, res: Response) => {
+export const deleteCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const { cardId } = req.params;
   const userId = req.user?._id;
 
@@ -55,53 +52,45 @@ export const deleteCard = (req: RequestOwner, res: Response) => {
         });
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для удаления карточки' });
-      }
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
+      next(err)
     });
 };
 
-export const likeCard = (req: RequestOwner, res: Response) => {
+export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const id = req.user?._id;
 
   return card.findByIdAndUpdate(req.params.cardId,
     { $addToSet: { likes: id } }, // добавить _id в массив, если его там нет
-    { new: true },).orFail()
+    { new: true },).orFail(() => {
+      const error = new Error();
+      error.name = 'CardNotFoundError';
+      throw error;
+    })
     .populate(['owner', 'likes'])
     .then((card) => {
       res.status(STATUS_OK).send({ data: card });
     })
     .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
-      }
-      if (err.name === 'CastError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки лайка.' });
-      }
-      return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
+      next(err)
     });
 }
 
 
-export const dislikeCard = (req: RequestOwner, res: Response) => {
+export const dislikeCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const id = req.user?._id;
 
   return card.findByIdAndUpdate(req.params.cardId,
     { $pull: { likes: id } },
-    { new: true },).orFail()
+    { new: true },).orFail(() => {
+      const error = new Error();
+      error.name = 'CardNotFoundError';
+      throw error;
+    })
     .populate(['owner', 'likes'])
     .then((card) => {
       res.send({ data: card });
     })
     .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
-      }
-      if (err.name === 'CastError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные для снятия лайка.' });
-
-      }
-      return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
-    });
+      next(err)
+    })
 }

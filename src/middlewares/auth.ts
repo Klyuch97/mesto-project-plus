@@ -12,7 +12,9 @@ const handleAuthError = (res: Response) => {
     .send({ message: 'Необходима авторизация' });
 };
 
-const extractBearerToken = (token: string) => { return token.replace('Bearer ', ''); }
+const extractBearerToken = (token: string) => {
+  return token.replace('Bearer ', '');
+}
 
 export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;

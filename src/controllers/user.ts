@@ -2,7 +2,8 @@ import { NextFunction, Request, Response } from 'express';
 import user from '../models/user';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, HTTP_STATUS_UNAUTHORIZED, STATUS_OK } from '../errors/errors';
+import { ERROR_CODE_NOT_FOUND, STATUS_OK } from '../errors/errors';
+
 
 
 export interface RequestUser extends Request {
@@ -11,15 +12,15 @@ export interface RequestUser extends Request {
   };
 }
 
-export const getUsers = (req: Request, res: Response) => {
+export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   return user.find({})
     .then(user =>
       res.status(STATUS_OK).send({ data: user })
     )
-    .catch(() => res.status(ERROR_CODE_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+    .catch((err) => next(err));
 };
 
-export const createUser = (req: Request, res: Response) => {
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about, avatar, email, password } = req.body;
 
   return bcrypt.hash(password, 10)
@@ -35,19 +36,12 @@ export const createUser = (req: Request, res: Response) => {
           });
         })
         .catch((err) => {
-          console.log(err.name);
-          if (err.name === "MongoServerError") {
-            return res.status(HTTP_STATUS_UNAUTHORIZED).json({ message: "Пользователь с таким email уже зарегестрирован" })
-          }
-          if (err.name === 'ValidationError') {
-            return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'переданы некорректные данные в методы создания пользователя' });
-          }
-          res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка' });
+          next(err)
         });
     })
 };
 
-export const getUserById = (req: Request, res: Response) => {
+export const getUserById = (req: Request, res: Response, next: NextFunction) => {
   const { userId } = req.params;
 
   user.findById(userId).orFail()
@@ -55,15 +49,8 @@ export const getUserById = (req: Request, res: Response) => {
       return res.status(STATUS_OK).json(user);
     })
     .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь по указанному _id не найден' });
-      }
-      if (err.name === 'CastError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: 'Переданы некорректные данные.' });
-      }
-
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Произошла ошибка" });
-    });
+      next(err)
+    })
 };
 
 export const UpdateUserInfo = (req: RequestUser, res: Response, next: NextFunction) => {
@@ -77,14 +64,11 @@ export const UpdateUserInfo = (req: RequestUser, res: Response, next: NextFuncti
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: "Переданы некорректные данные при обновлении профиля" });
-      }
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Ошибка на сервере" });
+      next(err)
     });
 };
 
-export const UpdateAvatar = (req: RequestUser, res: Response) => {
+export const UpdateAvatar = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   const { avatar } = req.body;
 
@@ -97,14 +81,11 @@ export const UpdateAvatar = (req: RequestUser, res: Response) => {
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(ERROR_CODE_BAD_REQUEST).json({ message: "Переданы некорректные данные при обновлении аватара" });
-      }
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: "Ошибка на сервере" });
+      next(err);
     })
 }
 
-export const Login = (req: Request, res: Response) => {
+export const Login = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   return user.findUserByCredentials(email, password)
@@ -114,11 +95,12 @@ export const Login = (req: Request, res: Response) => {
       });
     })
     .catch((err) => {
-      res.status(401).send({ message: err.message });
+      // res.status(401).send({ message: err.message });
+      return next(err)
     });
 };
 
-export const GetCurrentUser = (req: RequestUser, res: Response) => {
+export const GetCurrentUser = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   user.findById(userId)
     .then((user) => {
@@ -128,6 +110,6 @@ export const GetCurrentUser = (req: RequestUser, res: Response) => {
       res.status(STATUS_OK).json({ data: user });
     })
     .catch((err) => {
-      res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка при получении информации о пользователе' });
+      next(err)
     });
 };
