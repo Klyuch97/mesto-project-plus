@@ -69,14 +69,11 @@ export const getUserById = (req: Request, res: Response) => {
 export const UpdateUserInfo = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   const { name, about } = req.body;
-
   user.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
     .then((user) => {
-
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({ message: "Пользователь с указанным _id не найден" });
       }
-
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {

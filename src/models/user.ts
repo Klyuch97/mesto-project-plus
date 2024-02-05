@@ -15,7 +15,7 @@ interface UserModel extends Model<IUser> {
   findUserByCredentials: (email: string, password: string) => Promise<Document<unknown, any, IUser>>
 }
 
-const UserSchema = new mongoose.Schema<IUser,UserModel>({
+const UserSchema = new mongoose.Schema<IUser, UserModel>({
   name: {
     type: String,
     minlength: 2,
@@ -43,24 +43,27 @@ const UserSchema = new mongoose.Schema<IUser,UserModel>({
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    select: false
   }
 })
 
 UserSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
-  return this.findOne({ email }).then((user) => {
-    if (!user) {
-      return Promise.reject(new Error('Неправильные почта или пароль'));
-    }
-
-    return bcrypt.compare(password, user.password).then((matched) => {
-      if (!matched) {
+  return this.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
         return Promise.reject(new Error('Неправильные почта или пароль'));
       }
 
-      return user;
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return Promise.reject(new Error('Неправильные почта или пароль'));
+          }
+
+          return user;
+        });
     });
-  });
 });
 
-export default mongoose.model<IUser,UserModel>('user', UserSchema)
+export default mongoose.model<IUser, UserModel>('user', UserSchema)

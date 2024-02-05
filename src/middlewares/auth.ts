@@ -3,16 +3,16 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface SessionRequest extends Request {
-    user?: string | JwtPayload;
+  user?: string | JwtPayload;
 }
 
 const handleAuthError = (res: Response) => {
   res
-  .status(HTTP_STATUS_UNAUTHORIZED)
-  .send({ message: 'Необходима авторизация' });
+    .status(HTTP_STATUS_UNAUTHORIZED)
+    .send({ message: 'Необходима авторизация' });
 };
 
-const extractBearerToken = (token: string) => {  return token.replace('Bearer ', '');}
+const extractBearerToken = (token: string) => { return token.replace('Bearer ', ''); }
 
 export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
