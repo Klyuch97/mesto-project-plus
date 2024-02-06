@@ -3,6 +3,7 @@ import user from '../models/user';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ERROR_CODE_NOT_FOUND, STATUS_OK } from '../errors/errors';
+import { log } from 'winston';
 
 
 
@@ -53,7 +54,7 @@ export const getUserById = (req: Request, res: Response, next: NextFunction) => 
     })
 };
 
-export const UpdateUserInfo = (req: RequestUser, res: Response, next: NextFunction) => {
+export const updateUserInfo = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   const { name, about } = req.body;
   user.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
@@ -68,7 +69,7 @@ export const UpdateUserInfo = (req: RequestUser, res: Response, next: NextFuncti
     });
 };
 
-export const UpdateAvatar = (req: RequestUser, res: Response, next: NextFunction) => {
+export const updateAvatar = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   const { avatar } = req.body;
 
@@ -81,11 +82,12 @@ export const UpdateAvatar = (req: RequestUser, res: Response, next: NextFunction
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {
+
       next(err);
     })
 }
 
-export const Login = (req: Request, res: Response, next: NextFunction) => {
+export const login = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   return user.findUserByCredentials(email, password)
@@ -100,7 +102,7 @@ export const Login = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
-export const GetCurrentUser = (req: RequestUser, res: Response, next: NextFunction) => {
+export const getCurrentUser = (req: RequestUser, res: Response, next: NextFunction) => {
   const userId = req.user?._id;
   user.findById(userId)
     .then((user) => {

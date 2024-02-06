@@ -58,8 +58,9 @@ export const deleteCard = (req: RequestOwner, res: Response, next: NextFunction)
 
 export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const id = req.user?._id;
+  const { cardId } = req.params;
 
-  return card.findByIdAndUpdate(req.params.cardId,
+  return card.findByIdAndUpdate(cardId,
     { $addToSet: { likes: id } }, // добавить _id в массив, если его там нет
     { new: true },).orFail(() => {
       const error = new Error();
@@ -78,8 +79,9 @@ export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) =
 
 export const dislikeCard = (req: RequestOwner, res: Response, next: NextFunction) => {
   const id = req.user?._id;
+  const { cardId } = req.params;
 
-  return card.findByIdAndUpdate(req.params.cardId,
+  return card.findByIdAndUpdate(cardId,
     { $pull: { likes: id } },
     { new: true },).orFail(() => {
       const error = new Error();

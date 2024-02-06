@@ -2,9 +2,15 @@ import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, 
 import { Request, Response, NextFunction } from 'express';
 
 const errorMiddleware = (err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err);
+ // console.error(err);
   let statusCode = ERROR_CODE_SERVER_ERROR;
   let message = 'Ошибка на сервере';
+
+
+
+  if (err.name === 'ValidationError' && err.errors['avatar']) {
+    return res.status(ERROR_CODE_BAD_REQUEST).json({ message: err.errors['avatar'].message });
+  }
 
   if (err.code === 11000) {
     statusCode = HTTP_STATUS_CONFLICT;
