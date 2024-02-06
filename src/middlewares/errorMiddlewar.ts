@@ -17,6 +17,8 @@ const errorMiddleware = (err: any, req: Request, res: Response, next: NextFuncti
   }
 
   res.status(statusCode).json({ message });
+
+  return next();
 };
 
 export default errorMiddleware;
