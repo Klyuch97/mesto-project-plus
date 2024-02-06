@@ -2,7 +2,7 @@ import mongoose, { Document, Model } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
 import { StatusUnauthorized } from '../errors/customError';
-
+import reqExp from '../constants/constants';
 
 interface IUser {
   name: string,
@@ -13,6 +13,7 @@ interface IUser {
 }
 
 interface UserModel extends Model<IUser> {
+  // eslint-disable-next-line
   findUserByCredentials: (email: string, password: string) => Promise<Document<unknown, any, IUser>>
 }
 
@@ -21,23 +22,22 @@ const UserSchema = new mongoose.Schema<IUser, UserModel>({
     type: String,
     minlength: 2,
     maxlength: 30,
-    default: 'Жак-Ив Кусто'
+    default: 'Жак-Ив Кусто',
   },
   about: {
     type: String,
     minlength: 2,
     maxlength: 200,
-    default: 'Исследователь'
+    default: 'Исследователь',
   },
   avatar: {
     type: String,
     validate: {
-      validator: (v:string)=>
-         /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/.test(v),
+      validator: (v:string) => reqExp.test(v),
 
-      message: 'Неправильный формат ссылки на аватар'
+      message: 'Неправильный формат ссылки на аватар',
     },
-    default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png'
+    default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
   email: {
     type: String,
@@ -45,15 +45,15 @@ const UserSchema = new mongoose.Schema<IUser, UserModel>({
     required: true,
     validate: {
       validator: (v: string) => validator.isEmail(v),
-      message: 'Неправильный формат почты'
-    }
+      message: 'Неправильный формат почты',
+    },
   },
   password: {
     type: String,
     required: true,
-    select: false
-  }
-})
+    select: false,
+  },
+});
 
 UserSchema.static('findUserByCredentials', function findUserByCredentials(email: string, password: string) {
   return this.findOne({ email }).select('+password')
@@ -75,4 +75,4 @@ UserSchema.static('findUserByCredentials', function findUserByCredentials(email:
     });
 });
 
-export default mongoose.model<IUser, UserModel>('user', UserSchema)
+export default mongoose.model<IUser, UserModel>('user', UserSchema);

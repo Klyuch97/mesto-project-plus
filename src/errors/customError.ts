@@ -1,5 +1,7 @@
-import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, HTTP_STATUS_CONFLICT, HTTP_STATUS_FORBIDDEN, HTTP_STATUS_UNAUTHORIZED } from "./errors";
-
+import {
+  ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND,
+  HTTP_STATUS_FORBIDDEN, HTTP_STATUS_UNAUTHORIZED,
+} from './errors';
 
 export class BadRequestError extends Error {
   statusCode: number;

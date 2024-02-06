@@ -1,6 +1,6 @@
-import { Router } from "express";
-import cardRouter from "./card";
-import userRouter from "./user";
+import { Router } from 'express';
+import cardRouter from './card';
+import userRouter from './user';
 
 const router = Router();
 
