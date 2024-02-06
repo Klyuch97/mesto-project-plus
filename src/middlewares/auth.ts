@@ -1,4 +1,4 @@
-import { HTTP_STATUS_UNAUTHORIZED } from '../errors/errors'
+import { StatusUnauthorized } from '../errors/customError';
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
@@ -6,10 +6,9 @@ interface SessionRequest extends Request {
   user?: string | JwtPayload;
 }
 
-const handleAuthError = (res: Response) => {
-  res
-    .status(HTTP_STATUS_UNAUTHORIZED)
-    .send({ message: 'Необходима авторизация' });
+const handleAuthError = (res: Response, next: NextFunction) => {
+  const authenticationError = new StatusUnauthorized('Необходима авторизация');
+  return next(authenticationError);
 };
 
 const extractBearerToken = (token: string) => {
@@ -20,7 +19,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res);
+    return handleAuthError(res,next);
   }
 
   const token = extractBearerToken(authorization);
@@ -29,7 +28,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'super-strong-secret');
   } catch (err) {
-    return handleAuthError(res);
+    return handleAuthError(res,next);
   }
 
   req.user = payload; // записываем пейлоуд в объект запроса

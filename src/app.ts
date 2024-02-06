@@ -1,13 +1,13 @@
 import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import routes from './routes/index'
-import { ERROR_CODE_NOT_FOUND } from './errors/errors';
 import { login, createUser } from './controllers/user';
 import auth from './middlewares/auth';
-import  logger from './middlewares/logger';
-import errorMiddleware from './middlewares/errorMiddlewar';
+import logger from './middlewares/logger';
+import { errorMiddleware } from './middlewares/errorMiddlewar';
 import { errors } from 'celebrate';
 import { createUserValidator, loginValidator } from './validation/validation';
+import { NotFoundError } from './errors/customError';
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -20,14 +20,15 @@ const { errors: celebrateErrors } = require("celebrate");
 app.use(logger.requestLogger);
 
 app.post('/signin',loginValidator, login);
-app.post('/signup',createUserValidator, createUser);
+app.post('/signup', createUserValidator, createUser);
 
 app.use(auth);
 
 app.use('/', routes);
 
-app.use((req: Request, res: Response) => {
-  res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Передан несуществующий маршрут' });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const notFoundError = new NotFoundError('Передан несуществующий маршрут');
+  return next(notFoundError);
 });
 mongoose.connect('mongodb://localhost:27017/mestodb');
 

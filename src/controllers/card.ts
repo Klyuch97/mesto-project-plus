@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import card from '../models/card'
-import { ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND, ERROR_CODE_SERVER_ERROR, HTTP_STATUS_CONFLICT, STATUS_OK } from '../errors/errors';
+import { STATUS_OK } from '../errors/errors';
+import { BadRequestError, NotFoundError, StatusForbidden } from '../errors/customError';
 
 
 export interface RequestOwner extends Request {
@@ -37,18 +38,21 @@ export const deleteCard = (req: RequestOwner, res: Response, next: NextFunction)
   card.findById(cardId)
     .then((card) => {
       if (!card) {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+        const notFoundError = new NotFoundError("Карточка с указанным _id не найдена");
+        return next(notFoundError);
       }
       if (card.owner.toString() !== userId) {
-        return res.status(HTTP_STATUS_CONFLICT).json({ message: 'У вас нет прав на удаление этой карточки' });
+        const statusForbidden = new StatusForbidden("У вас нет прав на удаление этой карточки");
+        return next(statusForbidden);
       }
 
-      return card.deleteOne({ _id: cardId })
+      return card.deleteOne()
         .then(() => {
           res.status(STATUS_OK).json({ message: 'Карточка успешно удалена' });
         })
         .catch((error: any) => {
-          return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
+          //return res.status(ERROR_CODE_SERVER_ERROR).json({ message: 'Произошла ошибка на сервере' });
+          next(error)
         });
     })
     .catch((err) => {
@@ -62,16 +66,20 @@ export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) =
 
   return card.findByIdAndUpdate(cardId,
     { $addToSet: { likes: id } }, // добавить _id в массив, если его там нет
-    { new: true },).orFail(() => {
-      const error = new Error();
-      error.name = 'CardNotFoundError';
-      throw error;
-    })
+    { new: true },)
     .populate(['owner', 'likes'])
     .then((card) => {
+      if (!card) {
+       const notFoundError = new NotFoundError("Карточка с указанным _id не найдена");
+        return next(notFoundError);
+      }
       res.status(STATUS_OK).send({ data: card });
     })
     .catch((err) => {
+      if (err.name === 'CastError') {
+        const badRequestError = new BadRequestError("Переданы некорректные данные для поставновки лайка")
+        return next(badRequestError);
+      }
       next(err)
     });
 }
@@ -83,16 +91,20 @@ export const dislikeCard = (req: RequestOwner, res: Response, next: NextFunction
 
   return card.findByIdAndUpdate(cardId,
     { $pull: { likes: id } },
-    { new: true },).orFail(() => {
-      const error = new Error();
-      error.name = 'CardNotFoundError';
-      throw error;
-    })
+    { new: true },)
     .populate(['owner', 'likes'])
     .then((card) => {
+      if (!card) {
+        const notFoundError = new NotFoundError("Карточка с указанным _id не найдена");
+         return next(notFoundError);
+       }
       res.send({ data: card });
     })
     .catch((err) => {
+      if (err.name === 'CastError') {
+        const badRequestError = new BadRequestError("Переданы некорректные данные для снятия лайка")
+        return next(badRequestError);
+      }
       next(err)
     })
 }

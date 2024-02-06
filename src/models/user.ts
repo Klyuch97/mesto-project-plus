@@ -1,6 +1,7 @@
 import mongoose, { Document, Model } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
+import { StatusUnauthorized } from '../errors/customError';
 
 
 interface IUser {
@@ -58,19 +59,15 @@ UserSchema.static('findUserByCredentials', function findUserByCredentials(email:
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-       // return Promise.reject(new Error('Неправильные почта или пароль'));
-       const error = new Error();
-       error.name = 'AuthenticationError';
-       throw error;
+        const authenticationError = new StatusUnauthorized('Неправильные почта или пароль');
+        throw authenticationError;
       }
 
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-           // return Promise.reject(new Error('Неправильные почта или пароль'));
-           const error = new Error();
-           error.name = 'AuthenticationError';
-           throw error;
+            const authenticationError = new StatusUnauthorized('Неправильные почта или пароль');
+            throw authenticationError;
           }
 
           return user;

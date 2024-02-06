@@ -2,8 +2,8 @@ import { NextFunction, Request, Response } from 'express';
 import user from '../models/user';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { ERROR_CODE_NOT_FOUND, STATUS_OK } from '../errors/errors';
-import { log } from 'winston';
+import { STATUS_OK } from '../errors/errors';
+import { BadRequestError, NotFoundError } from '../errors/customError';
 
 
 
@@ -60,11 +60,16 @@ export const updateUserInfo = (req: RequestUser, res: Response, next: NextFuncti
   user.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_CODE_NOT_FOUND).send({ message: "Пользователь с указанным _id не найден" });
+        const notFoundError = new NotFoundError("Пользователь с указанным _id не найден");
+        return next(notFoundError);
       }
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {
+      if (err.name === 'ValidationError') {
+        const badRequestError = new BadRequestError("Переданы некорректные данные для обновления информации о себе")
+        return next(badRequestError);
+      }
       next(err)
     });
 };
@@ -73,16 +78,19 @@ export const updateAvatar = (req: RequestUser, res: Response, next: NextFunction
   const userId = req.user?._id;
   const { avatar } = req.body;
 
-
   user.findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_CODE_NOT_FOUND).send({ message: "Пользователь с указанным _id не найден" });
+        const notFoundError = new NotFoundError("Пользователь с указанным _id не найден");
+        return next(notFoundError);
       }
       return res.status(STATUS_OK).send({ data: user });
     })
     .catch((err) => {
-
+      if (err.name === 'ValidationError') {
+        const badRequestError = new BadRequestError("Переданы некорректные данные для обновления аватара")
+        return next(badRequestError);
+      }
       next(err);
     })
 }
@@ -107,7 +115,8 @@ export const getCurrentUser = (req: RequestUser, res: Response, next: NextFuncti
   user.findById(userId)
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_CODE_NOT_FOUND).json({ message: 'Пользователь не найден' });
+        const notFoundError = new NotFoundError("Пользователь с указанным _id не найден");
+        return next(notFoundError);
       }
       res.status(STATUS_OK).json({ data: user });
     })

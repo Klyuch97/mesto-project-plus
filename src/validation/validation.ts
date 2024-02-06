@@ -4,7 +4,7 @@ export const createUserValidator = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(200),
-    avatar: Joi.string(),
+    avatar: Joi.string().pattern(new RegExp(/^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/)),
     email: Joi.string().required().email(),
     password: Joi.string().required()
   })
@@ -13,14 +13,14 @@ export const createUserValidator = celebrate({
 
 export const getUserByIdValidator = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().required().length(24)
+    userId: Joi.string().required().length(24).hex()
   }),
 });
 
 export const updateUserInfoValidator = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    about: Joi.string().min(2).max(200),
+    name: Joi.string().min(2).max(30).required(),
+    about: Joi.string().min(2).max(200).required(),
   })
 })
 
@@ -41,12 +41,12 @@ export const loginValidator = celebrate({
 export const createCardValidator = celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required()
+    link: Joi.string().required().pattern(new RegExp(/^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/))
   })
 })
 
 export const CardIdValidator = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().length(24)
+    cardId: Joi.string().required().length(24).hex()
   }),
 })
