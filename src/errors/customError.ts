@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-classes-per-file
 import {
   ERROR_CODE_BAD_REQUEST, ERROR_CODE_NOT_FOUND,
   HTTP_STATUS_FORBIDDEN, HTTP_STATUS_UNAUTHORIZED,

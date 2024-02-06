@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import card from '../models/card';
+import Card from '../models/card';
 import { STATUS_OK } from '../errors/errors';
 import { BadRequestError, NotFoundError, StatusForbidden } from '../errors/customError';
 
@@ -13,7 +13,7 @@ export const createCard = (req: RequestOwner, res: Response, next: NextFunction)
   const { link, name } = req.body;
   const owner = req.user?._id;
 
-  return card.create({ name, link, owner })
+  return Card.create({ name, link, owner })
     .then((card) => {
       res.send({ data: card });
     })
@@ -22,7 +22,7 @@ export const createCard = (req: RequestOwner, res: Response, next: NextFunction)
     });
 };
 
-export const getCards = (req: Request, res: Response, next: NextFunction) => card.find({})
+export const getCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
   .populate(['owner', 'likes'])
   .then((card) => res.send({ data: card }))
   .catch((err) => next(err));
@@ -31,7 +31,7 @@ export const deleteCard = (req: RequestOwner, res: Response, next: NextFunction)
   const { cardId } = req.params;
   const userId = req.user?._id;
 
-  card.findById(cardId)
+  Card.findById(cardId)
     .then((card) => {
       if (!card) {
         const notFoundError = new NotFoundError('Карточка с указанным _id не найдена');
@@ -59,7 +59,7 @@ export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) =
   const id = req.user?._id;
   const { cardId } = req.params;
 
-  return card.findByIdAndUpdate(
+  return Card.findByIdAndUpdate(
     cardId,
     { $addToSet: { likes: id } }, // добавить _id в массив, если его там нет
     { new: true },
@@ -70,14 +70,14 @@ export const likeCard = (req: RequestOwner, res: Response, next: NextFunction) =
         const notFoundError = new NotFoundError('Карточка с указанным _id не найдена');
         return next(notFoundError);
       }
-      res.status(STATUS_OK).send({ data: card });
+      return res.status(STATUS_OK).send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         const badRequestError = new BadRequestError('Переданы некорректные данные для поставновки лайка');
         return next(badRequestError);
       }
-      next(err);
+      return next(err);
     });
 };
 
@@ -85,7 +85,7 @@ export const dislikeCard = (req: RequestOwner, res: Response, next: NextFunction
   const id = req.user?._id;
   const { cardId } = req.params;
 
-  return card.findByIdAndUpdate(
+  return Card.findByIdAndUpdate(
     cardId,
     { $pull: { likes: id } },
     { new: true },
@@ -96,13 +96,13 @@ export const dislikeCard = (req: RequestOwner, res: Response, next: NextFunction
         const notFoundError = new NotFoundError('Карточка с указанным _id не найдена');
         return next(notFoundError);
       }
-      res.send({ data: card });
+      return res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         const badRequestError = new BadRequestError('Переданы некорректные данные для снятия лайка');
         return next(badRequestError);
       }
-      next(err);
+      return next(err);
     });
 };
