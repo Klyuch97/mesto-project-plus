@@ -6,7 +6,7 @@ interface SessionRequest extends Request {
   user?: string | JwtPayload;
 }
 
-const handleAuthError = (res: Response, next: NextFunction) => {
+const handleAuthError = (next: NextFunction) => {
   const authenticationError = new StatusUnauthorized('Необходима авторизация');
   return next(authenticationError);
 };
@@ -17,7 +17,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res, next);
+    return handleAuthError(next);
   }
 
   const token = extractBearerToken(authorization);
@@ -26,7 +26,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'super-strong-secret');
   } catch (err) {
-    return handleAuthError(res, next);
+    return handleAuthError(next);
   }
 
   req.user = payload; // записываем пейлоуд в объект запроса
